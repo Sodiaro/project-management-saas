@@ -4,7 +4,7 @@ export const getEnv = (key: string, defaultValue: string = ""): string => {
     if (defaultValue) {
       return defaultValue;
     }
-    throw new Error(`Enviroment variable ${key} is not set`);
+    throw new Error(`Environment variable ${key} is not set`);
   }
   return value;
 };
