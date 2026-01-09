@@ -116,7 +116,7 @@ export const registerUserService = async (body: {
     });
     await account.save({ session });
 
-    // 3. Create a new workspace for the new user
+    // Create a new workspace for the new user
     const workspace = new WorkspaceModel({
       name: `My Workspace`,
       description: `Workspace created for ${user.name}`,
