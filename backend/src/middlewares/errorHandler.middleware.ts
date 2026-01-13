@@ -4,7 +4,6 @@ import { AppError } from "../utils/appError";
 import { z, ZodError } from "zod";
 import { ErrorCodeEnum } from "../enums/error-code.enum";
 
-
 const formatZodError = (res: Response, error: z.ZodError) => {
   const errors = error?.issues?.map((err) => ({
     field: err.path.join("."),
@@ -34,7 +33,6 @@ export const errorHandler: ErrorRequestHandler = (
    if (error instanceof ZodError) {
     return formatZodError(res, error);
   }
-
 
   if (error instanceof AppError) {
     return res.status(error.statusCode).json({
