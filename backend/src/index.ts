@@ -3,7 +3,6 @@ import express, { NextFunction, Request, Response } from "express";
 import cors from "cors";
 import session from "cookie-session";
 import { config } from "./config/app.config";
-import { connect } from "http2";
 import connectDatabase from "./config/database.config";
 import { HTTPSTATUS } from "./config/http.config";
 import { asyncHandler } from "./middlewares/asyncHandler.middleware";
@@ -18,6 +17,7 @@ import userRoutes from "./routes/user.route";
 import workspaceRoutes from "./routes/workspace.route";
 import projectRoutes from "./routes/project.route";
 import memberRoutes from "./routes/member.route";
+import taskRoutes from "./routes/task.route";
 
 const app = express();
 const BASE_PATH = config.BASE_PATH;
@@ -66,6 +66,7 @@ app.use(`${BASE_PATH}/user`, isAuthenticated, userRoutes);
 app.use(`${BASE_PATH}/workspace`, isAuthenticated, workspaceRoutes);
 app.use(`${BASE_PATH}/member`, isAuthenticated, memberRoutes);
 app.use(`${BASE_PATH}/project`, isAuthenticated, projectRoutes);
+app.use(`${BASE_PATH}/task`, isAuthenticated, taskRoutes);
 
 app.use(errorHandler);
 
