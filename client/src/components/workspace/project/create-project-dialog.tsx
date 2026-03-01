@@ -8,7 +8,7 @@ const CreateProjectDialog = () => {
     <div>
       <Dialog modal={true} open={open} onOpenChange={onClose}>
         <DialogContent className="sm:max-w-lg border-0">
-          <CreateProjectForm />
+          <CreateProjectForm onClose={onClose} />
         </DialogContent>
       </Dialog>
     </div>

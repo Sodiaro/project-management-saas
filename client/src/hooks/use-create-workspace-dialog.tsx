@@ -8,10 +8,13 @@ const useCreateWorkspaceDialog = () => {
 
   const onOpen = () => setOpen(true);
   const onClose = () => setOpen(false);
+  const onOpenChange = (nextOpen: boolean) => setOpen(nextOpen);
+
   return {
     open,
     onOpen,
     onClose,
+    onOpenChange,
   };
 };
 

@@ -12,8 +12,26 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "../ui/textarea";
+import { useAuthContext } from "@/context/auth-provider";
+import { useEffect } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { editWorkspaceMutationFn } from "@/lib/api";
+import useWorkspaceId from "@/hooks/use-workspace-id";
+import { toast } from "@/hooks/use-toast";
+import { Loader } from "lucide-react";
+import { Permissions } from "@/constant";
 
 export default function EditWorkspaceForm() {
+  const { workspace, hasPermission } = useAuthContext();
+  const canEditWorkspace = hasPermission(Permissions.EDIT_WORKSPACE);
+
+  const queryClient = useQueryClient();
+  const workspaceId = useWorkspaceId();
+
+  const { mutate, isPending } = useMutation({
+    mutationFn: editWorkspaceMutationFn,
+  });
+
   const formSchema = z.object({
     name: z.string().trim().min(1, {
       message: "Workspace name is required",
@@ -29,8 +47,36 @@ export default function EditWorkspaceForm() {
     },
   });
 
+  useEffect(() => {
+    if (workspace) {
+      form.setValue("name", workspace.name);
+      form.setValue("description", workspace?.description || "");
+    }
+  }, [form, workspace]);
+
   const onSubmit = (values: z.infer<typeof formSchema>) => {
-    console.log(values);
+    if (isPending) return;
+    const payload = {
+      workspaceId: workspaceId,
+      data: { ...values },
+    };
+    mutate(payload, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({
+          queryKey: ["workspace"],
+        });
+        queryClient.invalidateQueries({
+          queryKey: ["userWorkspaces"],
+        });
+      },
+      onError: (error) => {
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive",
+        });
+      },
+    });
   };
 
   return (
@@ -59,7 +105,7 @@ export default function EditWorkspaceForm() {
                       <Input
                         placeholder="Taco's Co."
                         className="!h-[48px] disabled:opacity-90 disabled:pointer-events-none"
-                        disabled={false}
+                        disabled={!canEditWorkspace}
                         {...field}
                       />
                     </FormControl>
@@ -83,7 +129,7 @@ export default function EditWorkspaceForm() {
                     <FormControl>
                       <Textarea
                         rows={6}
-                        disabled={false}
+                        disabled={!canEditWorkspace}
                         className="disabled:opacity-90 disabled:pointer-events-none"
                         placeholder="Our team organizes marketing projects and tasks here."
                         {...field}
@@ -94,15 +140,16 @@ export default function EditWorkspaceForm() {
                 )}
               />
             </div>
-            {/* {canEditWorkspace && ( */}
-            <Button
-              className="flex place-self-end  h-[40px] text-white font-semibold"
-              disabled={false}
-              type="submit"
-            >
-              {/* {false && <Loader className="animate-spin" />} */}
-              Update Workspace
-            </Button>
+            {canEditWorkspace && (
+              <Button
+                className="flex place-self-end  h-[40px] text-white font-semibold"
+                disabled={isPending}
+                type="submit"
+              >
+                {isPending && <Loader className="animate-spin" />}
+                Update Workspace
+              </Button>
+            )}
           </form>
         </Form>
       </div>

@@ -19,9 +19,27 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import useWorkspaceId from "@/hooks/use-workspace-id";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { createProjectMutationFn } from "@/lib/api";
+import { toast } from "@/hooks/use-toast";
+import { Loader } from "lucide-react";
 
-export default function CreateProjectForm() {
+export default function CreateProjectForm({
+  onClose,
+}: {
+  onClose: () => void;
+}) {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const workspaceId = useWorkspaceId();
+
   const [emoji, setEmoji] = useState("📊");
+
+  const { mutate, isPending } = useMutation({
+    mutationFn: createProjectMutationFn,
+  });
 
   const formSchema = z.object({
     name: z.string().trim().min(1, {
@@ -43,7 +61,38 @@ export default function CreateProjectForm() {
   };
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
-    console.log(values);
+    if (isPending) return;
+    const payload = {
+      workspaceId,
+      data: {
+        emoji,
+        ...values,
+      },
+    };
+    mutate(payload, {
+      onSuccess: (data) => {
+        const project = data.project;
+        queryClient.invalidateQueries({
+          queryKey: ["allprojects", workspaceId],
+        });
+
+        toast({
+          title: "Success",
+          description: "Project created successfully",
+          variant: "success",
+        });
+
+        onClose();
+        navigate(`/workspace/${workspaceId}/project/${project._id}`);
+      },
+      onError: (error) => {
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive",
+        });
+      },
+    });
   };
 
   return (
@@ -127,9 +176,11 @@ export default function CreateProjectForm() {
             </div>
 
             <Button
+              disabled={isPending}
               className="flex place-self-end  h-[40px] text-white font-semibold"
               type="submit"
             >
+              {isPending && <Loader className="animate-spin" />}
               Create
             </Button>
           </form>

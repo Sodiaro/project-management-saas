@@ -32,6 +32,7 @@ export const getProjectsInWorkspaceService = async (
   pageNumber: number
 ) => {
   // Step 1: Find all projects in the workspace
+
   const totalCount = await ProjectModel.countDocuments({
     workspace: workspaceId,
   });
@@ -83,7 +84,7 @@ export const getProjectAnalyticsService = async (
 
   const currentDate = new Date();
 
-  //Using Mongoose aggregate
+  //USING Mongoose aggregate
   const taskAnalytics = await TaskModel.aggregate([
     {
       $match: {

@@ -20,6 +20,7 @@ export const loginOrCreateAccountService = async (data: {
   email?: string;
 }) => {
   const { providerId, provider, displayName, email, picture } = data;
+  const normalizedEmail = email?.trim().toLowerCase();
 
   const session = await mongoose.startSession();
 
@@ -27,25 +28,34 @@ export const loginOrCreateAccountService = async (data: {
     session.startTransaction();
     console.log("Started Session...");
 
-    let user = await UserModel.findOne({ email }).session(session);
+    const existingProviderAccount = await AccountModel.findOne({
+      provider,
+      providerId,
+    }).session(session);
+
+    let user = existingProviderAccount
+      ? await UserModel.findById(existingProviderAccount.userId).session(session)
+      : null;
+
+    if (!user && normalizedEmail) {
+      user = await UserModel.findOne({ email: normalizedEmail }).session(session);
+    }
 
     if (!user) {
-      // Create a new user if it doesn't exist
+      if (!normalizedEmail) {
+        throw new BadRequestException(
+          "Email is required to create an OAuth account"
+        );
+      }
+
+      // Create user and default workspace for first-time OAuth sign-in.
       user = new UserModel({
-        email,
+        email: normalizedEmail,
         name: displayName,
         profilePicture: picture || null,
       });
       await user.save({ session });
 
-      const account = new AccountModel({
-        userId: user._id,
-        provider: provider,
-        providerId: providerId,
-      });
-      await account.save({ session });
-
-      // Create a new workspace for the new user
       const workspace = new WorkspaceModel({
         name: `My Workspace`,
         description: `Workspace created for ${user.name}`,
@@ -72,14 +82,23 @@ export const loginOrCreateAccountService = async (data: {
       user.currentWorkspace = workspace._id as mongoose.Types.ObjectId;
       await user.save({ session });
     }
+
+    if (!existingProviderAccount) {
+      // Link provider account to existing/new user once.
+      const linkedAccount = new AccountModel({
+        userId: user._id,
+        provider,
+        providerId,
+      });
+      await linkedAccount.save({ session });
+    }
+
     await session.commitTransaction();
-    session.endSession();
     console.log("End Session...");
 
     return { user };
   } catch (error) {
     await session.abortTransaction();
-    session.endSession();
     throw error;
   } finally {
     session.endSession();
@@ -185,4 +204,11 @@ export const verifyUserService = async ({
   }
 
   return user.omitPassword();
+};
+
+export const findUserByIdService = async (userId: string) => {
+  const user = await UserModel.findById(userId, {
+    password: false,
+  });
+  return user || null;
 };

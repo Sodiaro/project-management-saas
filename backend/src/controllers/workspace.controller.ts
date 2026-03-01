@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+
 import { asyncHandler } from "../middlewares/asyncHandler.middleware";
 import {
   changeRoleSchema,
@@ -36,6 +37,7 @@ export const createWorkspaceController = asyncHandler(
 );
 
 // Controller: Get all workspaces the user is part of
+
 export const getAllWorkspacesUserIsMemberController = asyncHandler(
   async (req: Request, res: Response) => {
     const userId = req.user?._id;
