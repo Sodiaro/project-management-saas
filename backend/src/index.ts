@@ -1,14 +1,12 @@
 import "dotenv/config";
-import express, { NextFunction, Request, Response } from "express";
+import express, { Request, Response } from "express";
+import mongoose from "mongoose";
 import cors from "cors";
 // import session from "cookie-session";
 import { config } from "./config/app.config";
 import connectDatabase from "./config/database.config";
 import { errorHandler } from "./middlewares/errorHandler.middleware";
 import { HTTPSTATUS } from "./config/http.config";
-import { asyncHandler } from "./middlewares/asyncHandler.middleware";
-import { BadRequestException } from "./utils/appError";
-import { ErrorCodeEnum } from "./enums/error-code.enum";
 import "./config/passport.config";
 import passport from "passport";
 import authRoutes from "./routes/auth.route";
@@ -51,6 +49,7 @@ app.use(
         ...configuredOrigins,
         "http://localhost:5173",
         "http://localhost:5174",
+        "https://taskflowsaas.vercel.app",
       ]);
 
       // Allow non-browser requests (no Origin header) and configured frontend apps.
@@ -64,18 +63,18 @@ app.use(
   }),
 );
 
-app.get(
-  `/`,
-  asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
-    throw new BadRequestException(
-      "This is a bad request",
-      ErrorCodeEnum.AUTH_INVALID_TOKEN,
-    );
-    return res.status(HTTPSTATUS.OK).json({
-      message: "Hello Subscribe to the channel & share",
+// Liveness/readiness probe for load balancers and uptime monitors.
+app.get(`/health`, (_req: Request, res: Response) => {
+  const isDbConnected = mongoose.connection.readyState === 1;
+  return res
+    .status(isDbConnected ? HTTPSTATUS.OK : HTTPSTATUS.SERVICE_UNAVAILABLE)
+    .json({
+      status: isDbConnected ? "ok" : "degraded",
+      uptime: process.uptime(),
+      timestamp: new Date().toISOString(),
+      database: isDbConnected ? "connected" : "disconnected",
     });
-  }),
-);
+});
 
 app.use(`${BASE_PATH}/auth`, authRoutes);
 app.use(`${BASE_PATH}/user`, passportAuthenticateJWT, userRoutes);
