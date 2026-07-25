@@ -34,17 +34,21 @@ export const loginOrCreateAccountService = async (data: {
     }).session(session);
 
     let user = existingProviderAccount
-      ? await UserModel.findById(existingProviderAccount.userId).session(session)
+      ? await UserModel.findById(existingProviderAccount.userId).session(
+          session,
+        )
       : null;
 
     if (!user && normalizedEmail) {
-      user = await UserModel.findOne({ email: normalizedEmail }).session(session);
+      user = await UserModel.findOne({ email: normalizedEmail }).session(
+        session,
+      );
     }
 
     if (!user) {
       if (!normalizedEmail) {
         throw new BadRequestException(
-          "Email is required to create an OAuth account"
+          "Email is required to create an OAuth account",
         );
       }
 
@@ -192,7 +196,7 @@ export const verifyUserService = async ({
     throw new NotFoundException("Invalid email or password");
   }
 
-  const user = await UserModel.findById(account.userId);
+  const user = await UserModel.findById(account.userId).select("+password");
 
   if (!user) {
     throw new NotFoundException("User not found for the given account");

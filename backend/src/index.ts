@@ -2,6 +2,8 @@ import "dotenv/config";
 import express, { Request, Response } from "express";
 import mongoose from "mongoose";
 import cors from "cors";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 // import session from "cookie-session";
 import { config } from "./config/app.config";
 import connectDatabase from "./config/database.config";
@@ -21,9 +23,32 @@ import { passportAuthenticateJWT } from "./config/passport.config";
 const app = express();
 const BASE_PATH = config.BASE_PATH;
 
-app.use(express.json());
+// Trust the first proxy hop (host/load balancer) so req.ip reflects the real
+// client — required for correct per-client rate limiting and secure cookies.
+app.set("trust proxy", 1);
 
-app.use(express.urlencoded({ extended: true }));
+// Rate limiting: a broad global cap plus a stricter cap on auth endpoints to
+// blunt credential brute-force and abuse. Tune the limits to real traffic.
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: "Too many attempts. Please try again later." },
+});
+
+app.use(helmet());
+
+app.use(express.json({ limit: "100kb" }));
+
+app.use(express.urlencoded({ extended: true, limit: "100kb" }));
 
 // app.use(
 //   session({
@@ -76,7 +101,10 @@ app.get(`/health`, (_req: Request, res: Response) => {
     });
 });
 
-app.use(`${BASE_PATH}/auth`, authRoutes);
+// Apply the global limiter after /health so uptime probes aren't throttled.
+app.use(globalLimiter);
+
+app.use(`${BASE_PATH}/auth`, authLimiter, authRoutes);
 app.use(`${BASE_PATH}/user`, passportAuthenticateJWT, userRoutes);
 app.use(`${BASE_PATH}/workspace`, passportAuthenticateJWT, workspaceRoutes);
 app.use(`${BASE_PATH}/member`, passportAuthenticateJWT, memberRoutes);
