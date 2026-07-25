@@ -50,6 +50,7 @@ app.use(
       const allowedOrigins = new Set([
         ...configuredOrigins,
         "http://localhost:5173",
+        "http://localhost:5174",
       ]);
 
       // Allow non-browser requests (no Origin header) and configured frontend apps.
@@ -60,7 +61,7 @@ app.use(
       return callback(new Error(`CORS blocked for origin: ${origin}`));
     },
     credentials: true,
-  })
+  }),
 );
 
 app.get(
@@ -68,12 +69,12 @@ app.get(
   asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
     throw new BadRequestException(
       "This is a bad request",
-      ErrorCodeEnum.AUTH_INVALID_TOKEN
+      ErrorCodeEnum.AUTH_INVALID_TOKEN,
     );
     return res.status(HTTPSTATUS.OK).json({
       message: "Hello Subscribe to the channel & share",
     });
-  })
+  }),
 );
 
 app.use(`${BASE_PATH}/auth`, authRoutes);
