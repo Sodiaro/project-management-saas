@@ -12,6 +12,6 @@ yarn-error.log
 
 data.txt
 
-# Ignore build artifacts or any compiled files (if you use TypeScript or other compilers)
+# Ignore build artifacts or any compiled files
 build/
 dist/
