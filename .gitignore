@@ -15,3 +15,4 @@ data.txt
 # Ignore build artifacts or any compiled files
 build/
 dist/
+list/
