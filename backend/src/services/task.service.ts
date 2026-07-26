@@ -3,6 +3,7 @@ import MemberModel from "../models/member.model";
 import ProjectModel from "../models/project.model";
 import TaskModel from "../models/task.model";
 import { BadRequestException, NotFoundException } from "../utils/appError";
+import { escapeRegExp } from "../utils/escape-regex";
 
 export const createTaskService = async (
   workspaceId: string,
@@ -33,7 +34,9 @@ export const createTaskService = async (
     });
 
     if (!isAssignedUserMember) {
-      throw new Error("Assigned user is not a member of this workspace.");
+      throw new BadRequestException(
+        "Assigned user is not a member of this workspace."
+      );
     }
   }
   const task = new TaskModel({
@@ -133,7 +136,7 @@ export const getAllTasksService = async (
   }
 
   if (filters.keyword && filters.keyword !== undefined) {
-    query.title = { $regex: filters.keyword, $options: "i" };
+    query.title = { $regex: escapeRegExp(filters.keyword), $options: "i" };
   }
 
   if (filters.dueDate) {
