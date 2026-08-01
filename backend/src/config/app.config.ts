@@ -18,6 +18,8 @@ const appConfig = () => ({
 
   FRONTEND_ORIGIN: getEnv("FRONTEND_ORIGIN", "localhost"),
   FRONTEND_GOOGLE_CALLBACK_URL: getEnv("FRONTEND_GOOGLE_CALLBACK_URL"),
+
+  ENABLE_API_DOCS: getEnv("ENABLE_API_DOCS", "true"),
 });
 
 export const config = appConfig();

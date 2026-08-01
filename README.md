@@ -340,6 +340,8 @@ The frontend mirrors this map for UX (hiding controls a user can't use) via a `u
 
 **Base path:** `/api` (configurable via `BASE_PATH`). All routes except `/auth/*` require a valid `Authorization: Bearer <jwt>` header.
 
+> **Interactive docs:** every endpoint below is documented in OpenAPI 3.0 and served as Swagger UI at **[`/api/docs`](http://localhost:8000/api/docs)** — request/response schemas, permission requirements, error shapes, and a working *Try it out* console (click **Authorize** and paste a login `access_token`). The raw document is at [`/api/docs/openapi.json`](http://localhost:8000/api/docs/openapi.json) for client generation. Set `ENABLE_API_DOCS=false` to stop serving both. The source lives in [backend/src/docs/](backend/src/docs/) — update it alongside any route change.
+
 ### Auth — `/api/auth`
 
 | Method | Path | Description | Auth |
@@ -508,6 +510,7 @@ npm run dev               # starts Vite dev server (default http://localhost:517
 | `GOOGLE_CLIENT_ID` | ✅¹ | Google OAuth client id |
 | `GOOGLE_CLIENT_SECRET` | ✅¹ | Google OAuth client secret |
 | `GOOGLE_CALLBACK_URL` | ✅¹ | e.g. `https://<api>/api/auth/google/callback` |
+| `ENABLE_API_DOCS` | — | Serve Swagger UI at `/api/docs` (default `true`; set `false` to disable) |
 | `FRONTEND_ORIGIN` | ✅ | Allowed CORS origin(s), comma-separated |
 | `FRONTEND_GOOGLE_CALLBACK_URL` | ✅¹ | SPA route that receives the OAuth token |
 

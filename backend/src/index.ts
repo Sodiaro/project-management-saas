@@ -19,6 +19,7 @@ import memberRoutes from "./routes/member.route";
 import projectRoutes from "./routes/project.route";
 import taskRoutes from "./routes/task.route";
 import { passportAuthenticateJWT } from "./config/passport.config";
+import docsRouter from "./docs";
 
 const app = express();
 const BASE_PATH = config.BASE_PATH;
@@ -101,8 +102,11 @@ app.get(`/health`, (_req: Request, res: Response) => {
     });
 });
 
-// Apply the global limiter after /health so uptime probes aren't throttled.
 app.use(globalLimiter);
+
+if (config.ENABLE_API_DOCS !== "false") {
+  app.use(`${BASE_PATH}/docs`, docsRouter);
+}
 
 app.use(`${BASE_PATH}/auth`, authLimiter, authRoutes);
 app.use(`${BASE_PATH}/user`, passportAuthenticateJWT, userRoutes);
