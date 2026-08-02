@@ -7,7 +7,7 @@ import { useNavigate } from "react-router-dom";
 
 const withPermission = (
   WrappedComponent: React.ComponentType,
-  requiredPermission: PermissionType
+  requiredPermission: PermissionType,
 ) => {
   const WithPermission = (props: any) => {
     const { user, hasPermission, isLoading } = useAuthContext();
@@ -15,10 +15,12 @@ const withPermission = (
     const workspaceId = useWorkspaceId();
 
     useEffect(() => {
+      if (isLoading) return;
+
       if (!user || !hasPermission(requiredPermission)) {
         navigate(`/workspace/${workspaceId}`);
       }
-    }, [user, hasPermission, navigate, workspaceId]);
+    }, [user, hasPermission, navigate, workspaceId, isLoading]);
 
     if (isLoading) {
       return <div>Loading...</div>;
@@ -26,7 +28,7 @@ const withPermission = (
 
     // Check if user has the required permission
     if (!user || !hasPermission(requiredPermission)) {
-      return;
+      return null;
     }
     // If the user has permission, render the wrapped component
     return <WrappedComponent {...props} />;
