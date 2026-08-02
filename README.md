@@ -631,15 +631,22 @@ This project implements the **core domain and platform** to a production-oriente
 
 ## Screenshots
 
-> _Placeholders — replace with real captures under `docs/screenshots/`._
+Captured from the [live demo](https://taskflowsaas.vercel.app) with the seeded demo tenant.
 
-| Dashboard | Task Board |
+| Workspace Dashboard | Task Board |
 | --- | --- |
-| _`docs/screenshots/dashboard.png`_ | _`docs/screenshots/tasks.png`_ |
+| [![Workspace dashboard](docs/screenshots/01-dashboard.png)](docs/screenshots/01-dashboard.png) | [![Task board](docs/screenshots/02-tasks.png)](docs/screenshots/02-tasks.png) |
+| Task totals, overdue and completed counts, and recent projects for the active workspace. | Filter by status, priority, assignee and project, with sortable columns and pagination. |
 
 | Members & Roles | Project Analytics |
 | --- | --- |
-| _`docs/screenshots/members.png`_ | _`docs/screenshots/analytics.png`_ |
+| [![Members and roles](docs/screenshots/03-members.png)](docs/screenshots/03-members.png) | [![Project analytics](docs/screenshots/04-project-analytics.png)](docs/screenshots/04-project-analytics.png) |
+| Shareable invite link plus per-member role assignment across `OWNER`, `ADMIN` and `MEMBER`. | Per-project totals with a task table scoped to that project. |
+
+| Sign In | API Reference |
+| --- | --- |
+| [![Sign in](docs/screenshots/05-sign-in.png)](docs/screenshots/05-sign-in.png) | [![Swagger UI](docs/screenshots/06-api-docs.png)](docs/screenshots/06-api-docs.png) |
+| Email/password and Google OAuth. | All 27 endpoints, browsable and executable at `/api/docs`. |
 
 ---
 
