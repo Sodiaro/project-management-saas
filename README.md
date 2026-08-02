@@ -14,6 +14,12 @@ Workspaces, projects, tasks, team invitations, and granular RBAC — built as a 
 [![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47A248?logo=mongodb&logoColor=white)](https://www.mongodb.com/atlas)
 [![Vite](https://img.shields.io/badge/Vite-6-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
 
+**[▶ Live Demo](https://taskflowsaas.vercel.app)** · **[API Docs (Swagger)](https://task-flow-3jk8.onrender.com/api/docs)** · **[API Health](https://task-flow-3jk8.onrender.com/health)**
+
+Sign in with **`demo@taskflow.dev`** / **`demo1234`** — two seeded workspaces, 5 projects, 34 tasks and a team of 4 spanning every role.
+
+> ⏳ The API runs on Render's free tier and sleeps after inactivity. **The first request can take ~30 seconds** while it wakes up; everything is instant after that.
+
 </div>
 
 ---
@@ -457,10 +463,13 @@ cd backend
 npm install
 cp .env.example .env      # then fill in the values (see Environment Variables)
 npm run seed              # seed the OWNER/ADMIN/MEMBER roles (run once)
+npm run seed:demo         # optional — populate the demo tenant with sample data
 npm run dev               # starts the API with hot reload
 ```
 
 > **Seeding is required before first use.** Registration and workspace creation look up the seeded `OWNER` role; without it those flows will fail with "Owner role not found".
+
+`npm run seed:demo` creates the `demo@taskflow.dev` account used by the live demo above — two workspaces, 5 projects, 34 tasks and 4 users covering `OWNER`, `ADMIN` and `MEMBER`. It is idempotent: re-running replaces only the demo tenant and leaves every other account untouched. Sign in as `maya@` (ADMIN) or `tobi@` (MEMBER) with the same password to see the RBAC rules change what the UI allows.
 
 ### 3. Frontend
 
@@ -478,9 +487,10 @@ npm run dev               # starts Vite dev server (default http://localhost:517
 | Script | Action |
 | --- | --- |
 | `npm run dev` | Start API with `ts-node-dev` (hot reload) |
-| `npm run build` | Type-check & compile to `list/` |
-| `npm start` | Run the compiled server (`node list/index.js`) |
+| `npm run build` | Type-check & compile to `dist/` |
+| `npm start` | Run the compiled server (`node dist/index.js`) |
 | `npm run seed` | Seed roles & permissions |
+| `npm run seed:demo` | Seed the demo tenant (users, workspaces, projects, tasks) |
 
 **Frontend**
 
