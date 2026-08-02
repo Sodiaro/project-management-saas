@@ -5,5 +5,5 @@ export function generateInviteCode() {
 }
 
 export function generateTaskCode() {
-  return `task-${uuidv4().replace(/-/g, "").substring(0, 3)}`;
+  return `task-${uuidv4().replace(/-/g, "").substring(0, 6)}`;
 }

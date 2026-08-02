@@ -4,6 +4,7 @@ import ProjectModel from "../models/project.model";
 import TaskModel from "../models/task.model";
 import { BadRequestException, NotFoundException } from "../utils/appError";
 import { escapeRegExp } from "../utils/escape-regex";
+import { generateTaskCode } from "../utils/uuid";
 
 export const createTaskService = async (
   workspaceId: string,
@@ -16,7 +17,7 @@ export const createTaskService = async (
     status: string;
     assignedTo?: string | null;
     dueDate?: string;
-  }
+  },
 ) => {
   const { title, description, priority, status, assignedTo, dueDate } = body;
 
@@ -24,7 +25,7 @@ export const createTaskService = async (
 
   if (!project || project.workspace.toString() !== workspaceId.toString()) {
     throw new NotFoundException(
-      "Project not found or does not belong to this workspace"
+      "Project not found or does not belong to this workspace",
     );
   }
   if (assignedTo) {
@@ -35,7 +36,7 @@ export const createTaskService = async (
 
     if (!isAssignedUserMember) {
       throw new BadRequestException(
-        "Assigned user is not a member of this workspace."
+        "Assigned user is not a member of this workspace.",
       );
     }
   }
@@ -51,7 +52,21 @@ export const createTaskService = async (
     dueDate,
   });
 
-  await task.save();
+  for (let attempt = 0; ; attempt++) {
+    try {
+      await task.save();
+      break;
+    } catch (error: any) {
+      const isDuplicateTaskCode =
+        error?.code === 11000 && error?.keyPattern?.taskCode;
+
+      if (!isDuplicateTaskCode || attempt >= 2) {
+        throw error;
+      }
+
+      task.taskCode = generateTaskCode();
+    }
+  }
 
   return { task };
 };
@@ -67,13 +82,13 @@ export const updateTaskService = async (
     status: string;
     assignedTo?: string | null;
     dueDate?: string;
-  }
+  },
 ) => {
   const project = await ProjectModel.findById(projectId);
 
   if (!project || project.workspace.toString() !== workspaceId.toString()) {
     throw new NotFoundException(
-      "Project not found or does not belong to this workspace"
+      "Project not found or does not belong to this workspace",
     );
   }
 
@@ -81,7 +96,7 @@ export const updateTaskService = async (
 
   if (!task || task.project.toString() !== projectId.toString()) {
     throw new NotFoundException(
-      "Task not found or does not belong to this project"
+      "Task not found or does not belong to this project",
     );
   }
 
@@ -90,7 +105,7 @@ export const updateTaskService = async (
     {
       ...body,
     },
-    { new: true }
+    { new: true },
   );
 
   if (!updatedTask) {
@@ -113,7 +128,7 @@ export const getAllTasksService = async (
   pagination: {
     pageSize: number;
     pageNumber: number;
-  }
+  },
 ) => {
   const query: Record<string, any> = {
     workspace: workspaceId,
@@ -175,13 +190,13 @@ export const getAllTasksService = async (
 export const getTaskByIdService = async (
   workspaceId: string,
   projectId: string,
-  taskId: string
+  taskId: string,
 ) => {
   const project = await ProjectModel.findById(projectId);
 
   if (!project || project.workspace.toString() !== workspaceId.toString()) {
     throw new NotFoundException(
-      "Project not found or does not belong to this workspace"
+      "Project not found or does not belong to this workspace",
     );
   }
 
@@ -200,7 +215,7 @@ export const getTaskByIdService = async (
 
 export const deleteTaskService = async (
   workspaceId: string,
-  taskId: string
+  taskId: string,
 ) => {
   const task = await TaskModel.findOneAndDelete({
     _id: taskId,
@@ -209,7 +224,7 @@ export const deleteTaskService = async (
 
   if (!task) {
     throw new NotFoundException(
-      "Task not found or does not belong to the specified workspace"
+      "Task not found or does not belong to the specified workspace",
     );
   }
 
