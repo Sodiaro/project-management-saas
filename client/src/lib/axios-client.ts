@@ -7,7 +7,7 @@ const baseURL = import.meta.env.VITE_API_BASE_URL;
 const options = {
   baseURL,
   withCredentials: true,
-  timeout: 10000,
+  timeout: 45000,
 };
 
 const API = axios.create(options);
@@ -37,7 +37,7 @@ API.interceptors.response.use(
     };
 
     return Promise.reject(customError);
-  }
+  },
 );
 
 export default API;
