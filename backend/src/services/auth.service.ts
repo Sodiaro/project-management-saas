@@ -11,6 +11,12 @@ import {
 } from "../utils/appError";
 import MemberModel from "../models/member.model";
 import { ProviderEnum } from "../enums/account-provider.enum";
+import { compareValue } from "../utils/bcrypt";
+
+const DUMMY_PASSWORD_HASH =
+  "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy";
+
+const DUMMY_USER_ID = new mongoose.Types.ObjectId("000000000000000000000000");
 
 export const loginOrCreateAccountService = async (data: {
   provider: string;
@@ -26,7 +32,6 @@ export const loginOrCreateAccountService = async (data: {
 
   try {
     session.startTransaction();
-    console.log("Started Session...");
 
     const existingProviderAccount = await AccountModel.findOne({
       provider,
@@ -98,7 +103,6 @@ export const loginOrCreateAccountService = async (data: {
     }
 
     await session.commitTransaction();
-    console.log("End Session...");
 
     return { user };
   } catch (error) {
@@ -168,7 +172,6 @@ export const registerUserService = async (body: {
 
     await session.commitTransaction();
     session.endSession();
-    console.log("End Session...");
 
     return {
       userId: user._id,
@@ -191,23 +194,23 @@ export const verifyUserService = async ({
   password: string;
   provider?: string;
 }) => {
+  const invalidCredentials = () =>
+    new UnauthorizedException("Invalid email or password");
+
   const account = await AccountModel.findOne({ provider, providerId: email });
-  if (!account) {
-    throw new NotFoundException("Invalid email or password");
-  }
+  const user = await UserModel.findById(
+    account ? account.userId : DUMMY_USER_ID,
+  ).select("+password");
 
-  const user = await UserModel.findById(account.userId).select("+password");
+  const isMatch = user?.password
+    ? await compareValue(password, user.password)
+    : await compareValue(password, DUMMY_PASSWORD_HASH).then(() => false);
 
-  if (!user) {
-    throw new NotFoundException("User not found for the given account");
-  }
-
-  const isMatch = await user.comparePassword(password);
   if (!isMatch) {
-    throw new UnauthorizedException("Invalid email or password");
+    throw invalidCredentials();
   }
 
-  return user.omitPassword();
+  return user!.omitPassword();
 };
 
 export const findUserByIdService = async (userId: string) => {
