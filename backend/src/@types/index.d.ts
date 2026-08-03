@@ -6,7 +6,7 @@ declare global {
       _id?: any;
     }
     interface Request {
-      jwt?: string;
+      authCode?: string;
     }
   }
 }

@@ -111,13 +111,68 @@ export const authPaths: OpenAPIV3.PathsObject = {
       tags: ["Auth"],
       summary: "Log out",
       description:
-        "Clears the Passport login state and the session cookie. Because " +
-        "authentication is stateless JWT, an already-issued `access_token` stays " +
-        "valid until it expires — clients must discard it themselves.",
+        "Increments the caller's token version, which invalidates **every** " +
+        "access token already issued to them — including tokens held on other " +
+        "devices. Requires a bearer token, since revocation has to know whose " +
+        "tokens to revoke.",
       operationId: "logout",
-      security: [],
       responses: {
-        "200": jsonResponse("Session cleared.", {}, "Logged out successfully"),
+        "200": jsonResponse(
+          "All of the caller's tokens are now invalid.",
+          {},
+          "Logged out successfully",
+        ),
+        "401": responseRef("Unauthorized"),
+        "429": responseRef("TooManyRequests"),
+        "500": responseRef("InternalServerError"),
+      },
+    },
+  },
+
+  [apiPath("/auth/google/exchange")]: {
+    post: {
+      tags: ["Auth"],
+      summary: "Exchange a Google auth code for an access token",
+      description:
+        "Completes Google sign-in. The OAuth callback redirects with a " +
+        "single-use `code` rather than a token; POST it here to receive the " +
+        "`access_token`. Codes are single-use and expire after 60 seconds, so " +
+        "the value that lands in browser history is worthless almost immediately.",
+      operationId: "exchangeAuthCode",
+      security: [],
+      requestBody: jsonBody({
+        type: "object",
+        required: ["code"],
+        properties: {
+          code: {
+            type: "string",
+            description: "The `code` query parameter from the OAuth redirect.",
+            example: "9f2c1d…",
+          },
+        },
+      }),
+      responses: {
+        "200": jsonResponse(
+          "Code accepted and consumed.",
+          {
+            access_token: {
+              type: "string",
+              example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+            },
+            user: ref("User"),
+            current_workspace: {
+              nullable: true,
+              description: "Workspace to land the user on, if they have one.",
+              allOf: [ref("ObjectId")],
+            } as unknown as OpenAPIV3.SchemaObject,
+          },
+          "Logged in successfully",
+        ),
+        "400": responseRef("ValidationError"),
+        "401": {
+          description: "The code is unknown, already spent, or expired.",
+          content: { "application/json": { schema: ref("ErrorResponse") } },
+        },
         "429": responseRef("TooManyRequests"),
         "500": responseRef("InternalServerError"),
       },
@@ -157,9 +212,10 @@ export const authPaths: OpenAPIV3.PathsObject = {
       description:
         "Called by Google, not by clients. On success the user (and, for a " +
         "first-time sign-in, a default workspace and OWNER membership) is created, " +
-        "then the browser is redirected to `FRONTEND_GOOGLE_CALLBACK_URL` with the " +
-        "JWT in the query string. On failure it redirects to the same URL with " +
-        "`status=failure` and no token.",
+        "then the browser is redirected to `FRONTEND_GOOGLE_CALLBACK_URL` with a " +
+        "single-use `code`. Trade that code for a token via " +
+        "`POST /auth/google/exchange`. On failure it redirects to the same URL " +
+        "with `status=failure` and no code.",
       operationId: "googleAuthCallback",
       security: [],
       parameters: [
@@ -182,12 +238,12 @@ export const authPaths: OpenAPIV3.PathsObject = {
         "302": {
           description:
             "Redirect to the frontend callback URL carrying `status`, and on " +
-            "success `access_token` plus `current_workspace`.",
+            "success a single-use `code`.",
           headers: {
             Location: {
               description:
                 "e.g. `https://app.example.com/google/oauth/callback" +
-                "?status=success&access_token=<jwt>&current_workspace=<id>`",
+                "?status=success&code=<single-use-code>`",
               schema: { type: "string", format: "uri" },
             },
           },

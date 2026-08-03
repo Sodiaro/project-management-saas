@@ -4,6 +4,9 @@ import { config } from "../config/app.config";
 
 export type AccessTPayload = {
     userId: UserDocument["_id"];
+    // Compared against the user's stored tokenVersion on every request so that
+    // logging out invalidates tokens that were already handed out.
+    tokenVersion: number;
 };
 
 type SignOptsAndSecret = SignOptions & {

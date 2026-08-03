@@ -27,7 +27,7 @@ import {
 } from "@/types/api.type";
 
 export const loginMutationFn = async (
-  data: loginType
+  data: loginType,
 ): Promise<LoginResponseType> => {
   const response = await API.post("/auth/login", data);
   return response.data;
@@ -38,17 +38,25 @@ export const registerMutationFn = async (data: registerType) =>
 
 export const logoutMutationFn = async () => await API.post("/auth/logout");
 
+// Completes Google sign-in. The OAuth redirect carries a single-use code
+// instead of the access token, which is traded for one here over POST.
+export const exchangeGoogleCodeMutationFn = async (
+  code: string,
+): Promise<{ access_token: string; current_workspace: string | null }> => {
+  const response = await API.post("/auth/google/exchange", { code });
+  return response.data;
+};
+
 export const getCurrentUserQueryFn =
   async (): Promise<CurrentUserResponseType> => {
     const response = await API.get(`/user/current`);
     return response.data;
   };
 
-//********* WORKSPACE ****************
-//************* */
+// WORKSPACE
 
 export const createWorkspaceMutationFn = async (
-  data: CreateWorkspaceType
+  data: CreateWorkspaceType,
 ): Promise<CreateWorkspaceResponseType> => {
   const response = await API.post(`/workspace/create/new`, data);
   return response.data;
@@ -69,21 +77,21 @@ export const getAllWorkspacesUserIsMemberQueryFn =
   };
 
 export const getWorkspaceByIdQueryFn = async (
-  workspaceId: string
+  workspaceId: string,
 ): Promise<WorkspaceByIdResponseType> => {
   const response = await API.get(`/workspace/${workspaceId}`);
   return response.data;
 };
 
 export const getMembersInWorkspaceQueryFn = async (
-  workspaceId: string
+  workspaceId: string,
 ): Promise<AllMembersInWorkspaceResponseType> => {
   const response = await API.get(`/workspace/members/${workspaceId}`);
   return response.data;
 };
 
 export const getWorkspaceAnalyticsQueryFn = async (
-  workspaceId: string
+  workspaceId: string,
 ): Promise<AnalyticsResponseType> => {
   const response = await API.get(`/workspace/analytics/${workspaceId}`);
   return response.data;
@@ -95,13 +103,13 @@ export const changeWorkspaceMemberRoleMutationFn = async ({
 }: ChangeWorkspaceMemberRoleType) => {
   const response = await API.put(
     `/workspace/change/member/role/${workspaceId}`,
-    data
+    data,
   );
   return response.data;
 };
 
 export const deleteWorkspaceMutationFn = async (
-  workspaceId: string
+  workspaceId: string,
 ): Promise<{
   message: string;
   currentWorkspace: string;
@@ -110,10 +118,10 @@ export const deleteWorkspaceMutationFn = async (
   return response.data;
 };
 
-//*******MEMBER ****************
+//MEMBER
 
 export const invitedUserJoinWorkspaceMutationFn = async (
-  iniviteCode: string
+  iniviteCode: string,
 ): Promise<{
   message: string;
   workspaceId: string;
@@ -122,15 +130,14 @@ export const invitedUserJoinWorkspaceMutationFn = async (
   return response.data;
 };
 
-//********* */
-//********* PROJECTS
+// PROJECTS
 export const createProjectMutationFn = async ({
   workspaceId,
   data,
 }: CreateProjectPayloadType): Promise<ProjectResponseType> => {
   const response = await API.post(
     `/project/workspace/${workspaceId}/create`,
-    data
+    data,
   );
   return response.data;
 };
@@ -142,7 +149,7 @@ export const editProjectMutationFn = async ({
 }: EditProjectPayloadType): Promise<ProjectResponseType> => {
   const response = await API.put(
     `/project/${projectId}/workspace/${workspaceId}/update`,
-    data
+    data,
   );
   return response.data;
 };
@@ -153,7 +160,7 @@ export const getProjectsInWorkspaceQueryFn = async ({
   pageNumber = 1,
 }: AllProjectPayloadType): Promise<AllProjectResponseType> => {
   const response = await API.get(
-    `/project/workspace/${workspaceId}/all?pageSize=${pageSize}&pageNumber=${pageNumber}`
+    `/project/workspace/${workspaceId}/all?pageSize=${pageSize}&pageNumber=${pageNumber}`,
   );
   return response.data;
 };
@@ -163,7 +170,7 @@ export const getProjectByIdQueryFn = async ({
   projectId,
 }: ProjectByIdPayloadType): Promise<ProjectResponseType> => {
   const response = await API.get(
-    `/project/${projectId}/workspace/${workspaceId}`
+    `/project/${projectId}/workspace/${workspaceId}`,
   );
   return response.data;
 };
@@ -173,7 +180,7 @@ export const getProjectAnalyticsQueryFn = async ({
   projectId,
 }: ProjectByIdPayloadType): Promise<AnalyticsResponseType> => {
   const response = await API.get(
-    `/project/${projectId}/workspace/${workspaceId}/analytics`
+    `/project/${projectId}/workspace/${workspaceId}/analytics`,
   );
   return response.data;
 };
@@ -185,14 +192,12 @@ export const deleteProjectMutationFn = async ({
   message: string;
 }> => {
   const response = await API.delete(
-    `/project/${projectId}/workspace/${workspaceId}/delete`
+    `/project/${projectId}/workspace/${workspaceId}/delete`,
   );
   return response.data;
 };
 
-//*******TASKS ********************************
-//************************* */
-
+// TASKS
 export const createTaskMutationFn = async ({
   workspaceId,
   projectId,
@@ -200,21 +205,20 @@ export const createTaskMutationFn = async ({
 }: CreateTaskPayloadType) => {
   const response = await API.post(
     `/task/project/${projectId}/workspace/${workspaceId}/create`,
-    data
+    data,
   );
   return response.data;
 };
-
 
 export const editTaskMutationFn = async ({
   taskId,
   projectId,
   workspaceId,
   data,
-}: EditTaskPayloadType): Promise<{message: string;}> => {
+}: EditTaskPayloadType): Promise<{ message: string }> => {
   const response = await API.put(
     `/task/${taskId}/project/${projectId}/workspace/${workspaceId}/update/`,
-    data
+    data,
   );
   return response.data;
 };
@@ -257,7 +261,7 @@ export const deleteTaskMutationFn = async ({
   message: string;
 }> => {
   const response = await API.delete(
-    `task/${taskId}/workspace/${workspaceId}/delete`
+    `task/${taskId}/workspace/${workspaceId}/delete`,
   );
   return response.data;
 };

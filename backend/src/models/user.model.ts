@@ -8,6 +8,7 @@ export interface UserDocument extends Document {
   profilePicture: string | null;
   isActive: boolean;
   lastLogin: Date | null;
+  tokenVersion: number;
   createdAt: Date;
   updatedAt: Date;
   currentWorkspace: mongoose.Types.ObjectId | null;
@@ -40,10 +41,11 @@ const userSchema = new Schema<UserDocument>(
     },
     isActive: { type: Boolean, default: true },
     lastLogin: { type: Date, default: null },
+    tokenVersion: { type: Number, default: 0 },
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 userSchema.pre("save", async function (next) {

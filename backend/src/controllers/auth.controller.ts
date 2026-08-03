@@ -1,35 +1,70 @@
 import { NextFunction, Request, Response } from "express";
 import { asyncHandler } from "../middlewares/asyncHandler.middleware";
 import { config } from "../config/app.config";
-import { registerSchema } from "../validation/auth.validation";
+import {
+  exchangeAuthCodeSchema,
+  registerSchema,
+} from "../validation/auth.validation";
 import { HTTPSTATUS } from "../config/http.config";
-import { registerUserService } from "../services/auth.service";
+import {
+  findUserByIdService,
+  registerUserService,
+} from "../services/auth.service";
+import AuthCodeModel, { hashAuthCode } from "../models/auth-code.model";
+import UserModel from "../models/user.model";
+import { UnauthorizedException } from "../utils/appError";
 import passport from "passport";
 import { signJwtToken } from "../utils/jwt";
 
 export const googleLoginCallback = asyncHandler(
   async (req: Request, res: Response) => {
-    const jwt = req.jwt;
-    const currentWorkspace = req.user?.currentWorkspace;
+    const authCode = req.authCode;
 
     const redirectUrl = new URL(config.FRONTEND_GOOGLE_CALLBACK_URL);
 
-    if (!jwt) {
+    if (!authCode) {
       redirectUrl.searchParams.set("status", "failure");
       return res.redirect(redirectUrl.toString());
     }
 
     redirectUrl.searchParams.set("status", "success");
-    redirectUrl.searchParams.set("access_token", jwt);
-    if (currentWorkspace) {
-      redirectUrl.searchParams.set(
-        "current_workspace",
-        currentWorkspace.toString()
-      );
-    }
+    redirectUrl.searchParams.set("code", authCode);
 
     return res.redirect(redirectUrl.toString());
-  }
+  },
+);
+
+export const exchangeAuthCodeController = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { code } = exchangeAuthCodeSchema.parse(req.body);
+
+    // Deleting as we read makes the code single-use even if two requests race.
+    const authCode = await AuthCodeModel.findOneAndDelete({
+      codeHash: hashAuthCode(code),
+    });
+
+    if (!authCode || authCode.expiresAt.getTime() < Date.now()) {
+      throw new UnauthorizedException("Invalid or expired authorization code");
+    }
+
+    const user = await findUserByIdService(authCode.userId.toString());
+
+    if (!user) {
+      throw new UnauthorizedException("Invalid or expired authorization code");
+    }
+
+    const access_token = signJwtToken({
+      userId: user._id,
+      tokenVersion: user.tokenVersion,
+    });
+
+    return res.status(HTTPSTATUS.OK).json({
+      message: "Logged in successfully",
+      access_token,
+      user,
+      current_workspace: user.currentWorkspace ?? null,
+    });
+  },
 );
 
 export const registerUserController = asyncHandler(
@@ -43,7 +78,7 @@ export const registerUserController = asyncHandler(
     return res.status(HTTPSTATUS.CREATED).json({
       message: "User created successfully",
     });
-  }
+  },
 );
 
 export const loginController = asyncHandler(
@@ -53,7 +88,7 @@ export const loginController = asyncHandler(
       (
         err: Error | null,
         user: Express.User | false,
-        info: { message: string } | undefined
+        info: { message: string } | undefined,
       ) => {
         if (err) {
           return next(err);
@@ -76,32 +111,30 @@ export const loginController = asyncHandler(
         //   });
         // });
 
-        const access_token = signJwtToken({ userId: user._id });
+        const access_token = signJwtToken({
+          userId: user._id,
+          tokenVersion: user.tokenVersion,
+        });
 
         return res.status(HTTPSTATUS.OK).json({
           message: "Logged in successfully",
           access_token,
           user,
         });
-      }
+      },
     )(req, res, next);
-  }
+  },
 );
 
 export const logOutController = asyncHandler(
   async (req: Request, res: Response) => {
-    req.logout((err) => {
-      if (err) {
-        console.error("Logout error:", err);
-        return res
-          .status(HTTPSTATUS.INTERNAL_SERVER_ERROR)
-          .json({ error: "Failed to log out" });
-      }
-    });
+    await UserModel.updateOne(
+      { _id: req.user?._id },
+      { $inc: { tokenVersion: 1 } },
+    );
 
-    req.session = null;
     return res
       .status(HTTPSTATUS.OK)
       .json({ message: "Logged out successfully" });
-  }
+  },
 );
