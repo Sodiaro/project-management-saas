@@ -2,11 +2,11 @@ import passport, { session } from "passport";
 import { Request } from "express";
 import { Strategy as GoogleStrategy, Strategy } from "passport-google-oauth20";
 import { Strategy as LocalStrategy } from "passport-local";
-import { 
+import {
   Strategy as jwtStrategy,
   ExtractJwt,
   StrategyOptions,
- } from "passport-jwt";
+} from "passport-jwt";
 import { config } from "./app.config";
 import { NotFoundException } from "../utils/appError";
 import { ProviderEnum } from "../enums/account-provider.enum";
@@ -15,7 +15,11 @@ import {
   loginOrCreateAccountService,
   verifyUserService,
 } from "../services/auth.service";
-import { signJwtToken } from "../utils/jwt";
+import AuthCodeModel, {
+  AUTH_CODE_TTL_MS,
+  generateAuthCode,
+  hashAuthCode,
+} from "../models/auth-code.model";
 
 passport.use(
   new GoogleStrategy(
@@ -41,15 +45,22 @@ passport.use(
           email: email,
         });
 
-        const jwt = signJwtToken({ userId: user._id});
-        req.jwt = jwt;
+        // Hand the redirect a single-use code rather than the access token, so
+        // no long-lived credential ends up in the URL.
+        const code = generateAuthCode();
+        await AuthCodeModel.create({
+          codeHash: hashAuthCode(code),
+          userId: user._id,
+          expiresAt: new Date(Date.now() + AUTH_CODE_TTL_MS),
+        });
+        req.authCode = code;
 
         done(null, user);
       } catch (error) {
         done(error, false);
       }
-    }
-  )
+    },
+  ),
 );
 
 passport.use(
@@ -66,12 +77,13 @@ passport.use(
       } catch (error: any) {
         return done(error, false, { message: error?.message });
       }
-    }
-  )
+    },
+  ),
 );
 
 interface jwtPayload {
   userId: string;
+  tokenVersion?: number;
 }
 
 const options: StrategyOptions = {
@@ -88,11 +100,16 @@ passport.use(
       if (!user) {
         return done(null, false);
       }
+
+      if (payload.tokenVersion !== user.tokenVersion) {
+        return done(null, false);
+      }
+
       return done(null, user);
     } catch (error) {
       return done(error, false);
     }
-  })
+  }),
 );
 
 passport.serializeUser((user: any, done) => done(null, user));
